@@ -1,0 +1,19 @@
+services:
+  server:
+    hostname: server
+    container_name: websocket_server
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+  client:
+    image: nginxinc/nginx-unprivileged:bookworm-perl
+    container_name: static_client
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./client/nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./client/html/:/usr/share/nginx/html/
+    depends_on:
+      - server
