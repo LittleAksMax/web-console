@@ -9,8 +9,29 @@
     <title>Websocket Test</title>
 </head>
 <body>
-    <h1>Hello, World!</h1>
-    <button id="sendBtn">Click Here</button>
-    <button id="quitBtn">Quit</button>
+    <div class="controlPanel">
+        <h1>Web Console</h1>
+
+        <div class="settings">
+            <select id="process" class="processSelect">
+                <option>Process 1</option>
+                <option>Process 2</option>
+                <option>Process 3</option>
+            </select>
+
+            <div class="parameters">
+
+            </div>
+        </div>
+        
+        <div class="controlBox">
+            <button id="startBtn" class="controlBtn">Start</button>
+            <button id="abortBtn" class="controlBtn">Abort</button>
+            <button id="clearBtn" class="controlBtn">Clear</button>
+        </div>
+    </div>
+    <div class="consoleContainer">
+        <textarea id="console" class="console" disabled></textarea>
+    </div>
 </body>
 </html>

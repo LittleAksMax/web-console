@@ -9,17 +9,21 @@ $(document).ready(() => {
         console.log('Connection Closed');
     })
     
-    socket.addEventListener('message', (event) => {
-        console.log(event);
+    socket.addEventListener('message', ({ data }) => {
+        $('#console').val($('#console').val() + data);
     });
 
-    $(document).ready(() => {
-        $('#sendBtn').on('click', (event) => {
-            socket.send('Ping');           
-        });
-
-        $('#quitBtn').on('click', () => {
-            socket.send('QUIT');
-        })
+    $('#startBtn').on('click', () => {
+        // TODO: JSONify and send data to initialise process
+        socket.send('Ping');
     });
+
+    $('#abortBtn').on('click', () => {
+        // TODO: cancellation token to abruptly kill process
+        socket.send('QUIT');
+    });
+
+    $('#clearBtn').on('click', () => {
+        $('#console').val('');
+    })
 });

@@ -1,3 +1,64 @@
-h1 {
-    color: blue;
+body {
+    margin: 0;
+    padding: 0;
+}
+
+button, select {
+    font-size: 18pt;
+}
+
+.controlPanel {
+    width: 80%;
+    margin: 0 10% 0 10%;
+}
+
+/* TODO: */
+.settings {
+
+}
+
+.processSelect {
+    padding: 2px;
+    margin: 5px;
+}
+
+/* TODO: */
+.parameters {
+
+}
+
+.controlBox {
+    display: flex;
+    flex-flow: row nowrap;
+    width: 100%;
+}
+
+.controlBtn {
+    padding: 5px;
+    margin: 5px;
+}
+
+#startBtn {
+    flex: 60%;
+}
+
+#clearBtn {
+    flex: 20%;
+}
+
+#abortBtn {
+    flex: 20%;
+}
+
+.consoleContainer {
+    display: flex;
+    width: 100%;
+    padding: 10px;
+}
+
+.console {
+    border: 2px solid black;
+    width: calc(100% - 10px - 20px);
+    min-height: 70vh;
+    padding: 5px;
 }
