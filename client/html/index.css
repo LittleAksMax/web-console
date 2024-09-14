@@ -3,28 +3,29 @@ body {
     padding: 0;
 }
 
-button, select {
+button, select, input, label {
     font-size: 18pt;
 }
 
 .controlPanel {
-    width: 80%;
-    margin: 0 10% 0 10%;
+    width: 70%;
+    margin: 0 15% 0 15%;
 }
 
-/* TODO: */
 .settings {
-
 }
 
 .processSelect {
-    padding: 2px;
+    padding: 4px;
+    margin: 10px;
+}
+
+.parameters {
     margin: 5px;
 }
 
-/* TODO: */
-.parameters {
-
+.paramGroup fieldset {
+    min-height: 10vh;
 }
 
 .controlBox {
@@ -52,13 +53,14 @@ button, select {
 
 .consoleContainer {
     display: flex;
-    width: 100%;
+    width: 90%;
+    margin: 0 5% 0 5%;
     padding: 10px;
 }
 
 .console {
     border: 2px solid black;
     width: calc(100% - 10px - 20px);
-    min-height: 70vh;
+    min-height: 60vh;
     padding: 5px;
 }

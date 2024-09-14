@@ -14,13 +14,35 @@
 
         <div class="settings">
             <select id="process" class="processSelect">
-                <option>Process 1</option>
-                <option>Process 2</option>
-                <option>Process 3</option>
+                <option value="process1">Process 1</option>
+                <option value="process2">Process 2</option>
+                <option value="process3">Process 3</option>
             </select>
 
             <div class="parameters">
+                <div id="process1Params" class="paramGroup" hidden>
+                    <fieldset>
+                        <legend>Process 1 Parameters</legend>
+                        <label for="process1Param1">Parameter 1:</label>
+                        <input name="process1Param1" type="text" />
+                        <br />
+                        <label for="process1Param2">Parameter 2:</label>
+                        <input name="process1Param2" type="number" />
+                    </fieldset>
+                </div>
+                <div id="process2Params" class="paramGroup" hidden>
+                    <fieldset name="Process 2">
+                        <legend>Process 2 Parameters</legend>
 
+                        <label for="process2Param1">Parameter 1:</label>
+                        <input name="process2Param1" />
+                    </fieldset>
+                </div>
+                <div id="process3Params" class="paramGroup" hidden>
+                    <fieldset>
+                        <legend>Process 3 Parameters</legend>
+                    </fieldset>
+                </div>
             </div>
         </div>
         
