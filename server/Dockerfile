@@ -8,5 +8,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY server.py server.py
 COPY processes processes
+COPY socketstdout socketstdout
 
 ENTRYPOINT [ "python", "server.py" ]

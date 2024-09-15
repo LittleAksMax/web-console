@@ -1,10 +1,12 @@
+import sys
 import asyncio
 from websockets.asyncio.server import serve
-from threading import Thread
+from threading import Thread, Lock
 from time import sleep
 from json import JSONDecodeError, loads as json_loads, dumps as json_dumps
 from processes import process1, process2, process3
 from processes.validators import process1_validator, process2_validator, process3_validator
+from socketstdout import EmittingStream
 
 # delay in seconds between ticks in the handler
 TICK_DELAY = 0.1
@@ -15,6 +17,7 @@ CALLS = dict(
     process2=(process2, process2_validator),
     process3=(process3, process3_validator)
 )
+
 
 async def handler(websocket):
     while True:
@@ -46,17 +49,30 @@ async def handler(websocket):
             return
 
         # create thread to run process in parallel
-        thread = Thread(target=proc, kwargs=parameters, daemon=True)
+        buffer = bytearray('', 'utf-8')
+        buffer_lock = Lock()  # lock used to access buffer between threads
+        sys.stdout = EmittingStream(buffer, buffer_lock)
+        thread = Thread(target=proc, kwargs=parameters)
         await websocket.send("Script started\n")
+
         thread.start()
+
+        # while the process is running
         while thread.is_alive():
-            # TODO: send whatever is buffered
-            await websocket.send("Pong")
+            with buffer_lock:
+                await websocket.send(buffer.decode('utf-8'))
+                buffer.clear()
             sleep(TICK_DELAY)
-        # make sure to clear buffer too
+
+        # make sure we send whatever remains as well
+        with buffer_lock:
+            await websocket.send(buffer.decode('utf-8'))
+            buffer.clear()
+
         await websocket.send("Script finished\n")
         # join thread once it has completed
         thread.join()
+        sys.stdout = sys.__stdout__
 
 async def main():
     async with serve(handler, "0.0.0.0", 3000):
