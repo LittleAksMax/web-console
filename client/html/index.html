@@ -4,22 +4,29 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="index.css">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script type="text/javascript" src="https://raw.githubusercontent.com/emn178/js-sha512/master/build/sha512.min.js"></script>
     <script type="text/javascript" src="index.js"></script>
     <title>Websocket Test</title>
 </head>
 <body>
     <div class="controlPanel">
         <h1>Web Console</h1>
-
         <div class="settings">
-            <select id="process" class="processSelect">
+            <form method="POST" class="auth">
+                <label for="authKey">Authentication Key:</label>
+                <input type="password" id="authKey" name="authKey" placeholder="some key here" autocomplete="off" required />
+                <br />
+                <input type="submit" id="submitKey" value="Authenticate" />
+            </form>
+
+            <select id="process" class="processSelect" hidden>
                 <option value="process1">Process 1</option>
                 <option value="process2">Process 2</option>
                 <option value="process3">Process 3</option>
             </select>
 
-            <div class="parameters">
+            <div class="parameters" hidden>
                 <div id="process1Params" class="paramGroup" hidden>
                     <fieldset>
                         <legend>Process 1 Parameters</legend>
@@ -46,13 +53,13 @@
             </div>
         </div>
         
-        <div class="controlBox">
+        <div class="controlBox" hidden>
             <button id="startBtn" class="controlBtn">Start</button>
             <button id="abortBtn" class="controlBtn">Abort</button>
             <button id="clearBtn" class="controlBtn">Clear</button>
         </div>
     </div>
-    <div class="consoleContainer">
+    <div class="consoleContainer" hidden>
         <textarea id="console" class="console" disabled></textarea>
     </div>
 </body>

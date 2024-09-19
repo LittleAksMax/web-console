@@ -3,6 +3,26 @@ const socket = new WebSocket('ws://localhost:3000');
 $(document).ready(() => {
     addSocketEventListeners(socket);
 
+    $('.auth').on('submit', (event) => {
+        event.preventDefault();
+        const key = $('#authKey').val();
+        
+        crypto.subtle
+            .digest('SHA-512', new TextEncoder('utf-8').encode(key))
+                .then(res => {
+                    socket.send(res);
+                    $('#process').show();
+                    $('.parameters').show();
+                    $('.controlBox').show();
+                    $('.consoleContainer').show();
+                    $('.auth').hide();
+                    $('#authKey').val('');
+                })
+                .catch(err => {
+                    console.error(err);
+                });
+    });
+
     // start button should invoke the currently active process
     // with the currently active parameters
     $('#startBtn').on('click', () => {
@@ -29,8 +49,7 @@ $(document).ready(() => {
 
     // abort button should send request to kill process
     $('#abortBtn').on('click', () => {
-        // TODO: cancellation token to abruptly kill process
-        socket.send('QUIT');
+        socket.close();
     });
 
     // clear button should clear the console
@@ -57,7 +76,17 @@ const addSocketEventListeners = (socket) => {
     })
 
     socket.addEventListener('message', ({ data }) => {
-        $('#console').val($('#console').val() + data);
+        $('#console').append(data);
+        let psconsole = $('#console');
+        if (psconsole.length) {
+           psconsole.scrollTop(psconsole[0].scrollHeight - psconsole.height());
+        }
+
+        // if it is the specific error message, we need to reauthenticate
+        if (data === 'error: invalid authentication message') {
+            location.reload();
+            alert('invalid authentication');
+        }
     });
 }
 
