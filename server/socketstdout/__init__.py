@@ -1,1 +1,1 @@
-from .emitter import EmittingStream
+from .emitter import ThreadSafeEmittingStream

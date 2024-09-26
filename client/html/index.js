@@ -3,14 +3,27 @@ const socket = new WebSocket('ws://localhost:3000');
 $(document).ready(() => {
     addSocketEventListeners(socket);
 
+    window.addEventListener('beforeunload', (event) => {
+        // TODO: 
+        console.log('QUITTING');
+    });
+
     $('.auth').on('submit', (event) => {
         event.preventDefault();
         const key = $('#authKey').val();
-        
         crypto.subtle
             .digest('SHA-512', new TextEncoder('utf-8').encode(key))
                 .then(res => {
-                    socket.send(res);
+                    // the hex conversion is ChatGPT:
+                    // Convert ArrayBuffer to Array of bytes
+                    const resArray = Array.from(new Uint8Array(res));
+                    // Convert bytes to hexadecimal string
+                    const hex = resArray.map(b => b.toString(16).padStart(2, '0')).join('');
+                    
+                    // send data
+                    socket.send(JSON.stringify({"type": "AUTH", "data": hex}));
+
+                    // change DOM
                     $('#process').show();
                     $('.parameters').show();
                     $('.controlBox').show();
@@ -28,7 +41,7 @@ $(document).ready(() => {
     $('#startBtn').on('click', () => {
         // obtain current process
         const process = $('#process').val();
-        socket.send(process);
+        socket.send(JSON.stringify({"type": "SELECT", "data": process}));
 
         // get input elements inside the parameter box of
         // the current process
@@ -44,18 +57,14 @@ $(document).ready(() => {
         }
 
         console.log(parameters);
-        socket.send(JSON.stringify(parameters));
+        socket.send(JSON.stringify({"type": "DATA", "data": parameters}));
     });
 
     // abort button should send request to kill process
-    $('#abortBtn').on('click', () => {
-        socket.close();
-    });
+    $('#abortBtn').on('click', () => { socket.close(); });
 
     // clear button should clear the console
-    $('#clearBtn').on('click', () => {
-        $('#console').val('');
-    })
+    $('#clearBtn').on('click', () => { $('#console').val(''); });
 
     // we want to change the parameters every time the process
     // changes in the dropdown
@@ -71,7 +80,6 @@ const addSocketEventListeners = (socket) => {
     });
 
     socket.addEventListener('close', (event) => {
-        console.log(event);
         console.log('Connection Closed');
     })
 
@@ -83,8 +91,8 @@ const addSocketEventListeners = (socket) => {
         }
 
         // if it is the specific error message, we need to reauthenticate
-        if (data === 'error: invalid authentication message') {
-            location.reload();
+        if (data.trim() === 'error: invalid authentication') {
+            window.location.reload();
             alert('invalid authentication');
         }
     });

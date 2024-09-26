@@ -1,4 +1,4 @@
-FROM python:3.9.20-alpine3.19
+FROM python:3.12.6-alpine3.19
 
 EXPOSE 3000
 
@@ -10,5 +10,6 @@ COPY server.py server.py
 COPY processes processes
 COPY socketstdout socketstdout
 COPY auth auth
+COPY handler handler
 
 ENTRYPOINT [ "python", "server.py" ]
