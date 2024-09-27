@@ -20,7 +20,7 @@ $(document).ready(() => {
                     const hex = resArray.map(b => b.toString(16).padStart(2, '0')).join('');
                     
                     // send data
-                    socket.send(JSON.stringify({"type": "AUTH", "data": hex}));
+                    socket.send(JSON.stringify({"type": "AUTH", "data": hex, "sid": $('#sid').val()}));
 
                     // change DOM
                     $('#process').show();
@@ -40,7 +40,7 @@ $(document).ready(() => {
     $('#startBtn').on('click', () => {
         // obtain current process
         const process = $('#process').val();
-        socket.send(JSON.stringify({"type": "SELECT", "data": process}));
+        socket.send(JSON.stringify({"type": "SELECT", "data": process, "sid": $('#sid').val()}));
 
         // get input elements inside the parameter box of
         // the current process
@@ -56,7 +56,7 @@ $(document).ready(() => {
         }
 
         console.log(parameters);
-        socket.send(JSON.stringify({"type": "DATA", "data": parameters}));
+        socket.send(JSON.stringify({"type": "DATA", "data": parameters, "sid": $('#sid').val()}));
     });
 
     // abort button should send request to kill process
@@ -88,20 +88,31 @@ const addSocketEventListeners = (socket) => {
         setTimeout(() => {
             // refresh to recreate-connection
             window.location.reload();
-        }, 500);
+        }, 1000);
     });
 
     socket.addEventListener('message', ({ data }) => {
-        $('#console').append(data);
-        let psconsole = $('#console');
-        if (psconsole.length) {
-           psconsole.scrollTop(psconsole[0].scrollHeight - psconsole.height());
+        const re = new RegExp('Session ID: ([a-f0-9]+)\\s?');
+        const matches = data.trim().match(re);
+
+        // if there is a match, then we were sent the SID
+        if (matches) {
+            const sid = matches[1]; // get first capture group
+            $('#sid').val(sid);
+        } else {
+            $('#console').append(data);
+            let psconsole = $('#console');
+            if (psconsole.length) {
+                psconsole.scrollTop(psconsole[0].scrollHeight - psconsole.height());
+            }
         }
 
         // if it is the specific error message, we need to reauthenticate
         if (data.trim() === 'error: invalid authentication') {
-            window.location.reload();
             alert('invalid authentication');
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
         }
     });
 }

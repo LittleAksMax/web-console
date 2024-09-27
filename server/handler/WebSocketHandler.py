@@ -1,3 +1,4 @@
+from uuid import uuid4
 from json import JSONDecodeError, loads as json_loads
 from threading import Thread, Lock
 from time import sleep
@@ -32,7 +33,9 @@ class WebSocketHandler:
         try:
             json_msg = json_loads(await websocket.recv())
 
-            if not isinstance(json_msg, dict) or len(json_msg) != 2 or "type" not in json_msg or "data" not in json_msg:
+            # json_msg should be a dictionary with fields, "type", "sid", and "data"
+            if not isinstance(json_msg, dict) or len(json_msg) != 3 or "type" not in json_msg \
+                    or "sid" not in json_msg or "data" not in json_msg:
                 raise KeyError()
 
             if json_msg.get("type", None) not in \
@@ -94,9 +97,9 @@ class WebSocketHandler:
                 return
             await websocket.send("Successfully authenticated\n")
 
-            # get client ID from API key used
-            # there might be a collision, but should be very rare
-            client_id = str(hash(key))
+            # generate new client ID and send to client to use in future communications
+            client_id = uuid4().hex
+            await websocket.send(f"Session ID: {client_id}\n")
 
             # event loop
             while True:
@@ -161,5 +164,7 @@ class WebSocketHandler:
         except KeyboardInterrupt:
             print(f"Connection closed manually.")
         finally:
+            # reset stream
             sys.stdout = sys.__stdout__
+
             print(f"Handler terminated for client {client_id}")
