@@ -1,9 +1,7 @@
-import uuid
 from json import JSONDecodeError, loads as json_loads
 from threading import Thread, Lock
 from time import sleep
 import sys
-from typing import Callable
 from websockets.asyncio.server import ServerConnection
 from websockets import ConnectionClosed
 from auth import Authenticator
@@ -82,6 +80,7 @@ class WebSocketHandler:
     async def handle(self, websocket: ServerConnection) -> None:
         client_id = ""
         try:
+            await websocket.send("Connection established\n")
             event = await WebSocketHandler.__get(websocket)
             if not event:
                 return
@@ -94,41 +93,56 @@ class WebSocketHandler:
                 await websocket.send("error: invalid authentication\n")
                 return
             await websocket.send("Successfully authenticated\n")
-            client_id = hash(key)
+
+            # get client ID from API key used
+            # there might be a collision, but should be very rare
+            client_id = str(hash(key))
 
             # event loop
             while True:
-                # get name of invoked process
-                invoked_process = await self.__get_invoked_process(websocket, client_id)
-                if invoked_process is None:
-                    return
+                # if there is already an existing session, use that thread and stream
+                if client_id not in self.__conn:
 
-                # get corresponding process handler and validator
-                proc, validator = self.__proc.get(invoked_process, (None, None))
-                assert proc is not None and validator is not None
+                    # get name of invoked process
+                    invoked_process = await self.__get_invoked_process(websocket, client_id)
+                    if invoked_process is None:
+                        return
 
-                # try to extract data
-                data = await self.__get_parameters(websocket)
-                if data is None:
-                    return
+                    # get corresponding process handler and validator
+                    proc, validator = self.__proc.get(invoked_process, (None, None))
+                    assert proc is not None and validator is not None
 
-                # validate retrieved data
-                err: list[str] = validator(**data)
-                if any(err):
-                    # always send the first error in the list until all errors fixed
-                    await websocket.send(f"error: " + "\nerror: ".join(err))
-                    continue  # continue, not return, because we want to allow retries
+                    # try to extract data
+                    data = await self.__get_parameters(websocket)
+                    if data is None:
+                        return
 
-                # set up buffer, lock, and stream for process
-                buffer = bytearray()
-                buffer_lock = Lock()
-                stream = ThreadSafeEmittingStream(buffer, buffer_lock)
+                    # validate retrieved data
+                    err: list[str] = validator(**data)
+                    if any(err):
+                        # always send the first error in the list until all errors fixed
+                        await websocket.send(f"error: " + "\nerror: ".join(err))
+                        continue  # continue, not return, because we want to allow retries
+                    # set up buffer, lock, and stream for process
+                    buffer = bytearray()
+                    buffer_lock = Lock()
+                    stream = ThreadSafeEmittingStream(buffer, buffer_lock)
+
+                    # create thread and start it with invoked process
+                    proc_name = proc.__name__
+                    thread = Thread(target=proc, kwargs=data, name=f"{proc_name}@{client_id}")
+
+                    # set up session for running process
+                    self.__conn[client_id] = (thread, stream)
+                else:
+                    thread, stream = self.__conn.pop(client_id)
+                    print(f"Session rejoined for client {client_id}.")
+
                 sys.stdout = stream
 
-                # create thread and start it with invoked process
-                proc_name = proc.__name__
-                thread = Thread(target=proc, kwargs=data, name=f"{proc_name}@{client_id}")
-                thread.start()
+                # conditionally start thread, since it might have been recalled
+                if not thread.is_alive():
+                    thread.start()
 
                 # keep messaging client while process runs
                 while thread.is_alive():
@@ -139,9 +153,13 @@ class WebSocketHandler:
                 # once process is completed
                 thread.join()
                 sys.stdout = sys.__stdout__
+
+                # destroy session after process terminates
+                self.__conn.pop(client_id)
         except ConnectionClosed:
             print(f"Connection suddenly closed for client {client_id}")
         except KeyboardInterrupt:
             print(f"Connection closed manually.")
         finally:
+            sys.stdout = sys.__stdout__
             print(f"Handler terminated for client {client_id}")

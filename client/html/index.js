@@ -4,7 +4,6 @@ $(document).ready(() => {
     addSocketEventListeners(socket);
 
     window.addEventListener('beforeunload', (event) => {
-        // TODO: 
         console.log('QUITTING');
     });
 
@@ -61,7 +60,12 @@ $(document).ready(() => {
     });
 
     // abort button should send request to kill process
-    $('#abortBtn').on('click', () => { socket.close(); });
+    $('#abortBtn').on('click', () => {
+        socket.close();
+
+        // reload window
+        window.location.reload();
+    });
 
     // clear button should clear the console
     $('#clearBtn').on('click', () => { $('#console').val(''); });
@@ -81,7 +85,11 @@ const addSocketEventListeners = (socket) => {
 
     socket.addEventListener('close', (event) => {
         console.log('Connection Closed');
-    })
+        setTimeout(() => {
+            // refresh to recreate-connection
+            window.location.reload();
+        }, 500);
+    });
 
     socket.addEventListener('message', ({ data }) => {
         $('#console').append(data);
