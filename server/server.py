@@ -1,6 +1,6 @@
 import os
 import asyncio
-from websockets.asyncio.server import serve, ServerConnection
+from websockets.asyncio.server import serve
 from threading import Thread, Lock
 from processes import process1, process2, process3, long_process
 from processes.validators import process1_validator, process2_validator, \

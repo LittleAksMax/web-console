@@ -2,11 +2,11 @@ from uuid import uuid4
 from json import JSONDecodeError, loads as json_loads
 from threading import Thread, Lock
 from time import sleep
-import sys
 from websockets.asyncio.server import ServerConnection
-from websockets import ConnectionClosed
+from websockets import ConnectionClosed, InvalidURI
 from auth import Authenticator
 from socketstdout import ThreadSafeEmittingStream
+from logging import getLogger
 
 
 class WebSocketHandler:
@@ -21,6 +21,7 @@ class WebSocketHandler:
         self.__stream = stream
         self.__conn = dict()
         self.__proc = processes
+        self.__logger = getLogger(__name__)
 
     @staticmethod
     async def __message(websocket: ServerConnection, stream: ThreadSafeEmittingStream, with_sleep=True) -> None:
@@ -81,6 +82,9 @@ class WebSocketHandler:
         return data
 
     async def handle(self, websocket: ServerConnection) -> None:
+        if websocket.request.path != "/":
+            print(f"{websocket.request.path} is an invalid path.")
+            return
         client_id = ""
         try:
             await websocket.send("Connection established\n")
@@ -97,14 +101,16 @@ class WebSocketHandler:
                 return
             await websocket.send("Successfully authenticated\n")
 
-            # generate new client ID and send to client to use in future communications
-            client_id = uuid4().hex
-            await websocket.send(f"Session ID: {client_id}\n")
+            # fetch client_id in request (if it exists)
+            client_id = event["sid"]
 
             # event loop
             while True:
                 # if there is already an existing session, use that thread and stream
                 if client_id not in self.__conn:
+                    # generate new client ID and send to client to use in future communications
+                    client_id = uuid4().hex
+                    await websocket.send(f"Session ID: {client_id}\n")
 
                     # get name of invoked process
                     invoked_process = await self.__get_invoked_process(websocket, client_id)
@@ -133,15 +139,13 @@ class WebSocketHandler:
 
                     # create thread and start it with invoked process
                     proc_name = proc.__name__
-                    thread = Thread(target=proc, kwargs=data, name=f"{proc_name}@{client_id}")
+                    thread = Thread(target=proc, args=(stream,), kwargs=data, name=f"{proc_name}@{client_id}")
 
                     # set up session for running process
                     self.__conn[client_id] = (thread, stream)
                 else:
                     thread, stream = self.__conn.pop(client_id)
                     print(f"Session rejoined for client {client_id}.")
-
-                sys.stdout = stream
 
                 # conditionally start thread, since it might have been recalled
                 if not thread.is_alive():
@@ -153,18 +157,16 @@ class WebSocketHandler:
                 # clear buffer if there is anything still left in it
                 await WebSocketHandler.__message(websocket, stream, with_sleep=False)
 
-                # once process is completed
+                # once process is completed, join thread and reset stdout stream
                 thread.join()
-                sys.stdout = sys.__stdout__
 
-                # destroy session after process terminates
+                # destroy session after process terminates and reset stream
                 self.__conn.pop(client_id)
         except ConnectionClosed:
             print(f"Connection suddenly closed for client {client_id}")
+        except InvalidURI as e:
+            print(f"Client attempted to join at {e.uri}")
         except KeyboardInterrupt:
             print(f"Connection closed manually.")
         finally:
-            # reset stream
-            sys.stdout = sys.__stdout__
-
             print(f"Handler terminated for client {client_id}")

@@ -1,4 +1,49 @@
-const socket = new WebSocket('ws://localhost:3000');
+const socket = new WebSocket('ws://localhost:3000/');
+
+const getCookieMap = () => {
+    const keyValPairs = document.cookie.split(';');
+
+    let cookies = {};
+    keyValPairs.forEach(keyValPair => {
+        const [key, val] = keyValPair.split('=');
+
+        // ignore empty
+        if (!key || key === '') {
+            return;
+        }
+
+        cookies[key] = val;
+    });
+    return cookies;
+}
+
+const getCookie = (key) => {
+    const cookies = getCookieMap();
+    if (key in cookies) {
+        return cookies[key];
+    } else {
+        return '';
+    }
+}
+
+const setCookie = (key, val) => {
+    const cookies = getCookieMap();
+    
+    // if no change, do nothing
+    if (key in cookies && cookies[key] === val) {
+        return;
+    }
+
+    // otherwise update map, and reconstruct cookies
+    cookies[key] = val;
+
+    let cookie = '';
+    for (const key in cookies) {
+       cookie += `${key}=${cookies[key]};`;
+    }
+    
+    document.cookie = cookie;
+}
 
 $(document).ready(() => {
     addSocketEventListeners(socket);
@@ -20,7 +65,8 @@ $(document).ready(() => {
                     const hex = resArray.map(b => b.toString(16).padStart(2, '0')).join('');
                     
                     // send data
-                    socket.send(JSON.stringify({"type": "AUTH", "data": hex, "sid": $('#sid').val()}));
+                    const sid = getCookie('sid');
+                    socket.send(JSON.stringify({"type": "AUTH", "data": hex, "sid": sid}));
 
                     // change DOM
                     $('#process').show();
@@ -40,12 +86,12 @@ $(document).ready(() => {
     $('#startBtn').on('click', () => {
         // obtain current process
         const process = $('#process').val();
-        socket.send(JSON.stringify({"type": "SELECT", "data": process, "sid": $('#sid').val()}));
+        const sid = getCookie('sid');
+        socket.send(JSON.stringify({"type": "SELECT", "data": process, "sid": sid}));
 
         // get input elements inside the parameter box of
         // the current process
         let parameters = {}; // start with an empty object
-        console.log($(`#${process}Params fieldset input`));
         const inputs = $(`#${process}Params fieldset input`);
         for (let i = 0; i < inputs.length; i++) {
             const input = $(inputs[i]);
@@ -55,8 +101,7 @@ $(document).ready(() => {
             parameters[name] = value;
         }
 
-        console.log(parameters);
-        socket.send(JSON.stringify({"type": "DATA", "data": parameters, "sid": $('#sid').val()}));
+        socket.send(JSON.stringify({"type": "DATA", "data": parameters, "sid": sid}));
     });
 
     // abort button should send request to kill process
@@ -98,7 +143,7 @@ const addSocketEventListeners = (socket) => {
         // if there is a match, then we were sent the SID
         if (matches) {
             const sid = matches[1]; // get first capture group
-            $('#sid').val(sid);
+            setCookie('sid', sid);
         } else {
             $('#console').append(data);
             let psconsole = $('#console');

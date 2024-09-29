@@ -6,44 +6,45 @@ NOTE: processes have to do their own error handling
 
 
 from time import sleep
+from socketstdout import ThreadSafeEmittingStream
 from . import validators
 from random import uniform
 
 
-def process1(**kwargs):
-    print("Script started")
+def process1(stream: ThreadSafeEmittingStream, **kwargs):
+    stream.write("Script started")
 
     for i in range(1, 21):
-        print(f"Process 1: {i}")
+        stream.write(f"Process 1: {i}")
         sleep(0.5)
 
-    print("Script finished")
+    stream.write("Script finished")
 
 
-def process2(**kwargs):
-    print("Script started")
+def process2(stream: ThreadSafeEmittingStream, **kwargs):
+    stream.write("Script started")
     for i in range(1, 51):
-        print(f"Process 2: {i}")
+        stream.write(f"Process 2: {i}")
         sleep(0.25)
 
-    print("Script finished")
+    stream.write("Script finished")
 
 
-def process3(**kwargs):
-    print("Script started")
+def process3(stream: ThreadSafeEmittingStream, **kwargs):
+    stream.write("Script started")
 
     for i in range(1, 101):
-        print(f"Process 3: {i}")
+        stream.write(f"Process 3: {i}")
         sleep(0.125)
 
-    print("Script finished")
+    stream.write("Script finished")
 
 
-def long_process(**kwargs):
-    print("Script started")
+def long_process(stream: ThreadSafeEmittingStream, **kwargs):
+    stream.write("Script started")
 
     for i in range(1, 100):
-        print(".", end="")
+        stream.write(".", end="")
         sleep(uniform(0.5, 2))
 
-    print("Script finished")
+    stream.write("Script finished")
